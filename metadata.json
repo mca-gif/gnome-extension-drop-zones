@@ -1,0 +1,9 @@
+{
+  "name": "gzones",
+  "description": "Configurable window drop zones.",
+  "uuid": "gzones@mattandersen.me",
+  "version": 0.1,
+  "shell-version": [
+    "3.38"
+  ]
+}
