@@ -3,6 +3,7 @@
   "description": "Configurable window drop zones.",
   "uuid": "gzones@mattandersen.me",
   "version": 0.1,
+  "schema": "org.gnome.shell.extensions.gzones", 
   "shell-version": [
     "3.38"
   ]
