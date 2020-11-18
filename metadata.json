@@ -1,6 +1,6 @@
 {
   "name": "Drop Zones",
-  "description": "Window management tool which allows you to confugre areas of the screen onto which you can then drop windows for quick flexible tiling.",
+  "description": "Gnome extension that allows you to configure areas of the screen onto which you can then drop windows for quick flexible tiling.",
   "uuid": "drop-zones@mattandersen.me",
   "version": 0.1,
   "schema": "org.gnome.shell.extensions.drop-zones",
