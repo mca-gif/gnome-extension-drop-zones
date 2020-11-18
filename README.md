@@ -7,3 +7,5 @@ For now, clone the repo to $HOME/.local/share/gnome-shell/extensions/drop-zones@
 ```
 git clone git@github.com:mca-gif/gnome-extension-drop-zones.git drop-zones@mattandersen.me
 ```
+
+and restart Gnome with Alt+F2 and type "restart"
