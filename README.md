@@ -1,6 +1,6 @@
 # Drop Zones Gnome Extension
 
-Window management tool which allows you to confugre areas of the screen onto which you can then drop windows for quick flexible tiling.
+Gnome extension that allows you to configure areas of the screen onto which you can then drop windows for quick flexible tiling.
 
 
 For now, clone the repo to $HOME/.local/share/gnome-shell/extensions/drop-zones@mattandersen.me
