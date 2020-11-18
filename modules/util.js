@@ -1,6 +1,6 @@
 const Main = imports.ui.main;
 const Me = imports.misc.extensionUtils.getCurrentExtension();
-const Logger = Me.imports.modules.logger.Logger.getLogger("GZones");
+const Logger = Me.imports.modules.logger.Logger.getLogger("Drop Zones");
 
 const Meta = imports.gi.Meta;
 const Gdk = imports.gi.Gdk;

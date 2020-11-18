@@ -1,9 +1,9 @@
 {
-  "name": "gzones",
-  "description": "Configurable window drop zones.",
-  "uuid": "gzones@mattandersen.me",
+  "name": "Drop Zones",
+  "description": "Window management tool which allows you to confugre areas of the screen onto which you can then drop windows for quick flexible tiling.",
+  "uuid": "drop-zones@mattandersen.me",
   "version": 0.1,
-  "schema": "org.gnome.shell.extensions.gzones", 
+  "schema": "org.gnome.shell.extensions.drop-zones",
   "shell-version": [
     "3.38"
   ]

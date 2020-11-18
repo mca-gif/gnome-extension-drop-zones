@@ -1,6 +1,6 @@
 /* extension.js */
 
-const GETTEXT_DOMAIN = 'GZones';
+const GETTEXT_DOMAIN = 'Drop Zones';
 
 const { GObject, St } = imports.gi;
 
@@ -16,7 +16,7 @@ const Clutter = imports.gi.Clutter;
 const GLib = imports.gi.GLib;
 
 const Window = Me.imports.modules.window.Window;
-const Logger = Me.imports.modules.logger.Logger.getLogger("GZones");
+const Logger = Me.imports.modules.logger.Logger.getLogger("Drop Zones");
 const Util = Me.imports.modules.util.Util;
 const Settings = Me.imports.modules.settings.Settings;
 
@@ -320,10 +320,10 @@ class Extension {
     }
 
     _get_zone_patterns() {
-        let pattern_selection = this._settings.get_enum(Extension.SETTING_ZONE_PATTERN);
+        let pattern_selection = this._settings.get_int(Extension.SETTING_ZONE_PATTERN);
         this._log.debug(`Selected zone pattern is ${pattern_selection}`);
 
-        if ( pattern_selection >= Extension.premade_zones.length ) {
+        if ( pattern_selection >= Extension.premade_zones.length || pattern_selection < 0 ) {
             pattern_selection = 0;
         }
 

@@ -2,7 +2,7 @@ const Main = imports.ui.main;
 const Meta = imports.gi.Meta;
 const Shell = imports.gi.Shell;
 const Me = imports.misc.extensionUtils.getCurrentExtension();
-const Logger = Me.imports.modules.logger.Logger.getLogger("GZones");
+const Logger = Me.imports.modules.logger.Logger.getLogger("Drop Zones");
 
 class Window {
 
