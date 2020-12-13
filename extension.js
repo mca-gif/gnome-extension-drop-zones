@@ -40,6 +40,12 @@ class Extension {
     static SETTING_ZONE_PATTERN = 'zone-pattern';
     static SETTING_BORDER_GAP = 'border-gap';
 
+    // Delay in seconds
+    static INITIAL_ZONE_CALC_DELAY = 3;
+
+    // How often scan for zones 
+    static ZONE_RECALC_INTERVAL = 200;
+
     static premade_zones = [
         /* Quarter Tiles */ [
             { x: 0.00, y: 0.00, width: 0.50, height: 0.50},
@@ -52,12 +58,13 @@ class Extension {
             { x: 0.40, y: 0.00, width: 0.60, height: 1.00}
         ],
         /* Wide Screen */[
-            { x: 0.00, y: 0.00, width: 0.30, height: 0.50 },
-            { x: 0.00, y: 0.50, width: 0.30, height: 0.50 },
-            { x: 0.30, y: 0.00, width: 0.45, height: 0.70 },
-            { x: 0.30, y: 0.70, width: 0.45, height: 0.30 },
-            { x: 0.75, y: 0.00, width: 0.25, height: 0.40 },
-            { x: 0.75, y: 0.40, width: 0.25, height: 0.60 }
+            { x: 0.00, y: 0.00, width: 0.30, height: 0.50 }, // Left - upper
+            { x: 0.00, y: 0.50, width: 0.30, height: 0.50 }, // Left - lower
+            { x: 0.3125, y: 0.00, width: 0.37, height: 0.50 }, // Center - upper - large
+            { x: 0.30, y: 0.00, width: 0.45, height: 0.70 }, // Center - upper - large
+            { x: 0.30, y: 0.70, width: 0.45, height: 0.30 }, // Center - lower
+            { x: 0.75, y: 0.00, width: 0.25, height: 0.40 }, // Right - upper
+            { x: 0.75, y: 0.40, width: 0.25, height: 0.60 }  // Right - lower
         ]
     ];
 
@@ -104,7 +111,7 @@ class Extension {
 
         // Delay zone calculation for a few seconds.
         // For some reason the workspace isn't the correct size yet, but the workspace-added signal above isn't called when it is right.
-        GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 3, function() {
+        GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, Extension.INITIAL_ZONE_CALC_DELAY, function() {
             if ( this._zones.length === 0 ) {
                 this._calculate_zone_pixel_sizes();
             }
@@ -199,7 +206,12 @@ class Extension {
         if (this._timer) { return; }
 
         let zone_win = this._windows[meta_win.get_id()];
-        this._timer = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 200, this._on_window_move_refresh.bind(this, zone_win));
+        
+        this._timer = GLib.timeout_add(
+            GLib.PRIORITY_DEFAULT,
+            Extension.ZONE_RECALC_INTERVAL,
+            this._on_window_move_refresh.bind(this, zone_win)
+        );
     }
 
     _on_window_move_refresh(zone_win) {
@@ -207,7 +219,7 @@ class Extension {
       
         zone_win.restore_rect();
 
-        if (!Util.is_ctrl_pressed()) {
+        if ( !Util.is_mod_pressed_live()) {
             this._hide_hit_box();
             return true;
         }
@@ -228,7 +240,7 @@ class Extension {
     _end_on_window_move(actor, meta_display, meta_win) {
         this._timer = null;
         this._hide_hit_box();
-        if (!Util.is_ctrl_pressed()) { return; }
+        if (!Util.is_mod_pressed_buffered()) { return; }
 
         let mouse_rect = this._get_mouse_rect();
         let [hit_zone_idx, hit_zone] = this._zone_hit_test(mouse_rect);
@@ -267,11 +279,16 @@ class Extension {
     }
 
     _zone_hit_test(test_rect) {
+        this._log.debug("Hit test begin");
         let hit_zone_idx = this._zones.findIndex(zone => {
-            return this._rect_hit_test(test_rect, zone);
+            let hit_zone = this._rect_hit_test(test_rect, zone);
+            this._log.debug(`Hit testing zone ${zone.x},${zone.y},${zone.width},${zone.height} ${hit_zone}`);
+            return hit_zone;
         });
 
         let hit_zone = this._zones[hit_zone_idx];
+
+        this._log.debug("Hit test end");
 
         return [hit_zone_idx, hit_zone];
     }
