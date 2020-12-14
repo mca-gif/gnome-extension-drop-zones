@@ -4,15 +4,14 @@ const Shell = imports.gi.Shell;
 const Me = imports.misc.extensionUtils.getCurrentExtension();
 const Logger = Me.imports.modules.logger.Logger.getLogger("Drop Zones");
 
+const zoneable_window_types = [
+  Meta.WindowType.NORMAL
+];
+
+const blacklist_classes = [
+  'Conky'
+];
 class Window {
-
-  static zoneable_window_types = [
-    Meta.WindowType.NORMAL
-  ];
-
-  static blacklist_classes = [
-    'Conky'
-  ];
 
   static get_id(win) {
     return win.get_stable_sequence();
@@ -74,11 +73,11 @@ class Window {
       return false;
     }
 
-    if ( Window.blacklist_classes.indexOf(this.window_class())  === -1 ) {
+    if ( blacklist_classes.indexOf(this.window_class())  === -1 ) {
       return false;
     }
 
-    if ( Window.zoneable_window_types.indexOf(this.window_type()) === -1 ) {
+    if ( zoneable_window_types.indexOf(this.window_type()) === -1 ) {
       return false;
     }
 

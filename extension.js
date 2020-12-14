@@ -19,6 +19,15 @@ const Window = Me.imports.modules.window.Window;
 const Logger = Me.imports.modules.logger.Logger.getLogger("Drop Zones");
 const Util = Me.imports.modules.util.Util;
 const Settings = Me.imports.modules.settings.Settings;
+const ModKeyHelper = Me.imports.modules.modkeyhelper.ModKeyHelper;
+
+const SETTING_ZONE_PATTERN = 'zone-pattern';
+const SETTING_BORDER_GAP = 'border-gap';
+
+// Delay in seconds
+const INITIAL_ZONE_CALC_DELAY = 3;
+// How often scan for zones
+const ZONE_RECALC_INTERVAL = 200;
 
 var HighlightBox = GObject.registerClass(
 class HighlightBox extends St.Widget {
@@ -37,48 +46,15 @@ class HighlightBox extends St.Widget {
 });
 
 class Extension {
-    static SETTING_ZONE_PATTERN = 'zone-pattern';
-    static SETTING_BORDER_GAP = 'border-gap';
 
-    // Delay in seconds
-    static INITIAL_ZONE_CALC_DELAY = 3;
 
-    // How often scan for zones 
-    static ZONE_RECALC_INTERVAL = 200;
-
-    static premade_zones = [
-        /* Quarter Tiles */ [
-            { x: 0.00, y: 0.00, width: 0.50, height: 0.50},
-            { x: 0.50, y: 0.00, width: 0.50, height: 0.50},
-            { x: 0.00, y: 0.50, width: 0.50, height: 0.50},
-            { x: 0.50, y: 0.50, width: 0.50, height: 0.50}
-        ],
-        /* 40% / 60% */ [
-            { x: 0.00, y: 0.00, width: 0.40, height: 1.00},
-            { x: 0.40, y: 0.00, width: 0.60, height: 1.00}
-        ],
-        /* Wide Screen */[
-            { x: 0.00, y: 0.00, width: 0.30, height: 0.50 }, // Left - upper
-            { x: 0.00, y: 0.50, width: 0.30, height: 0.50 }, // Left - lower
-            { x: 0.3125, y: 0.00, width: 0.37, height: 0.50 }, // Center - upper - large
-            { x: 0.30, y: 0.00, width: 0.45, height: 0.70 }, // Center - upper - large
-            { x: 0.30, y: 0.70, width: 0.45, height: 0.30 }, // Center - lower
-            { x: 0.75, y: 0.00, width: 0.25, height: 0.40 }, // Right - upper
-            { x: 0.75, y: 0.40, width: 0.25, height: 0.60 }  // Right - lower
-        ]
-    ];
-
-    static moving_grab_ops = [
-        Meta.GrabOp.MOVING,
-        Meta.GrabOp.KEYBOARD_MOVING
-    ];
-
-    constructor(uuid) {      
+    constructor(uuid) {
         this._uuid = uuid;
         this._hb = null;
         this._actor_connections = [];
         this._windows = [];
         this._log = Logger.getLogger("Extension");
+        this._modkey = new ModKeyHelper();
 
         this._settings = Settings.forExtensionSchema();
 
@@ -87,6 +63,34 @@ class Extension {
 
         this._zones = [];
         this._timer = null;
+        
+
+        this.premade_zones = [
+            /* Quarter Tiles */ [
+                { x: 0.00, y: 0.00, width: 0.50, height: 0.50},
+                { x: 0.50, y: 0.00, width: 0.50, height: 0.50},
+                { x: 0.00, y: 0.50, width: 0.50, height: 0.50},
+                { x: 0.50, y: 0.50, width: 0.50, height: 0.50}
+            ],
+            /* 40% / 60% */ [
+                { x: 0.00, y: 0.00, width: 0.40, height: 1.00},
+                { x: 0.40, y: 0.00, width: 0.60, height: 1.00}
+            ],
+            /* Wide Screen */[
+                { x: 0.00, y: 0.00, width: 0.30, height: 0.50 }, // Left - upper
+                { x: 0.00, y: 0.50, width: 0.30, height: 0.50 }, // Left - lower
+                { x: 0.3125, y: 0.00, width: 0.37, height: 0.50 }, // Center - upper - large
+                { x: 0.30, y: 0.00, width: 0.45, height: 0.70 }, // Center - upper - large
+                { x: 0.30, y: 0.70, width: 0.45, height: 0.30 }, // Center - lower
+                { x: 0.75, y: 0.00, width: 0.25, height: 0.40 }, // Right - upper
+                { x: 0.75, y: 0.40, width: 0.25, height: 0.60 }  // Right - lower
+            ]
+        ];
+
+        this.moving_grab_ops = [
+            Meta.GrabOp.MOVING,
+            Meta.GrabOp.KEYBOARD_MOVING
+        ];
 
         this._log.info(`initializing ${Me.metadata.name} version ${Me.metadata.version}`);
         ExtensionUtils.initTranslations(GETTEXT_DOMAIN);
@@ -111,7 +115,7 @@ class Extension {
 
         // Delay zone calculation for a few seconds.
         // For some reason the workspace isn't the correct size yet, but the workspace-added signal above isn't called when it is right.
-        GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, Extension.INITIAL_ZONE_CALC_DELAY, function() {
+        GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, INITIAL_ZONE_CALC_DELAY, function() {
             if ( this._zones.length === 0 ) {
                 this._calculate_zone_pixel_sizes();
             }
@@ -134,15 +138,15 @@ class Extension {
         this._settings_edge_tiling_restore_value = this._gnome_mutter_settings.get_boolean('edge-tiling');
         this._gnome_mutter_settings.set_boolean('edge-tiling', false);
 
-        this._connect_signal(this._settings, 'changed::' + Extension.SETTING_BORDER_GAP, this._on_border_gap_changed.bind(this));
-        this._connect_signal(this._settings, 'changed::' + Extension.SETTING_ZONE_PATTERN, this._on_zone_pattern_changed.bind(this));
+        this._connect_signal(this._settings, 'changed::' + SETTING_BORDER_GAP, this._on_border_gap_changed.bind(this));
+        this._connect_signal(this._settings, 'changed::' + SETTING_ZONE_PATTERN, this._on_zone_pattern_changed.bind(this));
     }
 
     _calculate_zone_pixel_sizes() { 
         this._log.info("Recalculating zone areas.");
 
         let work_area = Util.get_workspace_area(0);
-        let padding = Math.floor(this._settings.get_int(Extension.SETTING_BORDER_GAP));
+        let padding = Math.floor(this._settings.get_int(SETTING_BORDER_GAP));
 
         this._log.info(`Workarea Rect: ${work_area.x} ${work_area.y} ${work_area.width} ${work_area.height}`);
         this._log.info(`Padding: ${padding}`);
@@ -186,7 +190,9 @@ class Extension {
 
     _on_window_grab_begin(actor, meta_display, meta_win, grab_op) {
         if (!meta_win) { return; }
-        if (Extension.moving_grab_ops.indexOf(grab_op) === -1) { return; }
+        if (this.moving_grab_ops.indexOf(grab_op) === -1) { return; }
+
+        this._log.debug(`Grab begin operation: ${grab_op}`);
 
         if ( !this._zones ) {
             this._calculate_zone_pixel_sizes();
@@ -197,7 +203,7 @@ class Extension {
 
     _on_window_grab_end(actor, meta_display, meta_win, grab_op) {
         if (!meta_win) { return; }
-        if (Extension.moving_grab_ops.indexOf(grab_op) === -1) { return; }
+        if (this.moving_grab_ops.indexOf(grab_op) === -1) { return; }
 
         this._end_on_window_move(actor, meta_display, meta_win);
     }
@@ -206,20 +212,24 @@ class Extension {
         if (this._timer) { return; }
 
         let zone_win = this._windows[meta_win.get_id()];
+
+        this._log.debug("Beginning window move.");
         
         this._timer = GLib.timeout_add(
             GLib.PRIORITY_DEFAULT,
-            Extension.ZONE_RECALC_INTERVAL,
+            ZONE_RECALC_INTERVAL,
             this._on_window_move_refresh.bind(this, zone_win)
         );
     }
 
     _on_window_move_refresh(zone_win) {
         if (!this._timer) { return false; }
-      
+
+        this._log.debug("Beginning window move.");
+
         zone_win.restore_rect();
 
-        if ( !Util.is_mod_pressed_live()) {
+        if ( !this._modkey.is_pressed()) {
             this._hide_hit_box();
             return true;
         }
@@ -240,7 +250,7 @@ class Extension {
     _end_on_window_move(actor, meta_display, meta_win) {
         this._timer = null;
         this._hide_hit_box();
-        if (!Util.is_mod_pressed_buffered()) { return; }
+        if (!this._modkey.is_pressed_buffered()) { return; }
 
         let mouse_rect = this._get_mouse_rect();
         let [hit_zone_idx, hit_zone] = this._zone_hit_test(mouse_rect);
@@ -327,24 +337,24 @@ class Extension {
     }
 
     _on_border_gap_changed() {
-        this._log.info(`Gap size changed. ${this._settings.get_int(Extension.SETTING_BORDER_GAP)}`);
+        this._log.info(`Gap size changed. ${this._settings.get_int(SETTING_BORDER_GAP)}`);
         this._calculate_zone_pixel_sizes();
     }
 
     _on_zone_pattern_changed() {
-        this._log.info(`Zone pattern selection changed. ${this._settings.get_int(Extension.SETTING_ZONE_PATTERN)}`);
+        this._log.info(`Zone pattern selection changed. ${this._settings.get_int(SETTING_ZONE_PATTERN)}`);
         this._calculate_zone_pixel_sizes();
     }
 
     _get_zone_patterns() {
-        let pattern_selection = this._settings.get_int(Extension.SETTING_ZONE_PATTERN);
+        let pattern_selection = this._settings.get_int(SETTING_ZONE_PATTERN);
         this._log.debug(`Selected zone pattern is ${pattern_selection}`);
 
-        if ( pattern_selection >= Extension.premade_zones.length || pattern_selection < 0 ) {
+        if ( pattern_selection >= this.premade_zones.length || pattern_selection < 0 ) {
             pattern_selection = 0;
         }
 
-        return Extension.premade_zones[pattern_selection];
+        return this.premade_zones[pattern_selection];
     }
 }
 
