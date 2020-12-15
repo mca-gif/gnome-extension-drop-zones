@@ -79,7 +79,7 @@ class ModKeyHelper {
 
         Logger.debug("Mod key buffer timer expired. Testing.");
 
-        if ( !this._is_mod_pressed_actual()) {
+        if ( !this.is_pressed()) {
           Logger.debug("Mod key is NOT pressed, clearing.");
           this._mod_pressed = false;
         }
