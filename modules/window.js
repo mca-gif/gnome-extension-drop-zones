@@ -23,7 +23,7 @@ class Window {
     this._signals = [];
 
     this._dropped_zone = -1;
-    this._restore_rect = null;22
+    this._restore_rect = null;
   }
 
   set_dropped_zone(n) {
@@ -37,6 +37,10 @@ class Window {
 
   set_restore_rect() {
     this._restore_rect = this.win.get_frame_rect();
+  }
+
+  clear_restore_rect() {
+    this._restore_rect = null;
   }
 
   restore_rect() {

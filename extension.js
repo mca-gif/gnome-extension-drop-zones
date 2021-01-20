@@ -28,6 +28,8 @@ const SETTING_BORDER_GAP = 'border-gap';
 const INITIAL_ZONE_CALC_DELAY = 3;
 // How often scan for zones
 const ZONE_RECALC_INTERVAL = 200;
+// Distance a window must be dragged before the size is restored
+const RESTORE_RECT_THRESHOLD = 50;
 
 var HighlightBox = GObject.registerClass(
 class HighlightBox extends St.Widget {
@@ -63,7 +65,7 @@ class Extension {
 
         this._zones = [];
         this._timer = null;
-        
+        this._drag_begin_mouse_position = null;
 
         this.premade_zones = [
             /* Quarter Tiles */ [
@@ -181,11 +183,18 @@ class Extension {
         this._windows[meta_win.get_id()] = win;
         
         this._connect_signal(meta_win, 'unmanaged', this._on_window_unmanage.bind(this));
+        // this._connect_signal(meta_win, 'size-changed', this._on_window_size_changed.bind(this));
     }
 
     _on_window_unmanage(meta_win) {
-        delete this._windows[Window.get_id(meta_win)];
+        delete this._windows[meta_win.get_id()];
         this._disconnect_signals(meta_win);
+    }
+
+    _on_window_size_changed(meta_win) {
+        this._log.debug("Window resized, clearing previous size state.");
+        let win = this._windows[meta_win.get_id()];
+        win.clear_restore_rect();
     }
 
     _on_window_grab_begin(actor, meta_display, meta_win, grab_op) {
@@ -215,6 +224,8 @@ class Extension {
 
         this._log.debug("Beginning window move.");
         
+        this._drag_begin_mouse_position = this._get_mouse_position();
+
         this._timer = GLib.timeout_add(
             GLib.PRIORITY_DEFAULT,
             ZONE_RECALC_INTERVAL,
@@ -227,7 +238,11 @@ class Extension {
 
         this._log.debug("Beginning window move.");
 
-        zone_win.restore_rect();
+        let drag_distance = this._calc_drag_distance();
+        this._log.debug(`Window was dragged a distance of ${drag_distance}`);
+        if ( drag_distance >= RESTORE_RECT_THRESHOLD ) {
+            zone_win.restore_rect();
+        }
 
         if ( !this._modkey.is_pressed()) {
             this._hide_hit_box();
@@ -249,7 +264,9 @@ class Extension {
 
     _end_on_window_move(actor, meta_display, meta_win) {
         this._timer = null;
+        this._drag_begin_mouse_position = null;
         this._hide_hit_box();
+
         if (!this._modkey.is_pressed_buffered()) { return; }
 
         let mouse_rect = this._get_mouse_rect();
@@ -326,11 +343,16 @@ class Extension {
         });
     }
 
-    _get_mouse_rect() {
+    _get_mouse_position() {
         let [screen, x, y] = this._pointer.get_position();
+        return {x: x, y: y};
+    }
+
+    _get_mouse_rect() {
+        let pos = this._get_mouse_position();
         return {
-            x: x,
-            y: y,
+            x: pos.x,
+            y: pos.y,
             width: 4,
             height: 4
         }
@@ -355,6 +377,20 @@ class Extension {
         }
 
         return this.premade_zones[pattern_selection];
+    }
+
+    _calc_drag_distance() {
+        if ( ! this._drag_begin_mouse_position ) {
+            return 0;
+        }
+
+        let fir_pos = this._drag_begin_mouse_position;
+        let cur_pos = this._get_mouse_position();
+        let a = cur_pos.x - fir_pos.x;
+        let b = cur_pos.y - fir_pos.y;
+        let a_sqr = a**2;
+        let b_sqr = b**2;
+        return Math.sqrt( a_sqr + b_sqr );
     }
 }
 
