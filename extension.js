@@ -183,7 +183,6 @@ class Extension {
         this._windows[meta_win.get_id()] = win;
         
         this._connect_signal(meta_win, 'unmanaged', this._on_window_unmanage.bind(this));
-        // this._connect_signal(meta_win, 'size-changed', this._on_window_size_changed.bind(this));
     }
 
     _on_window_unmanage(meta_win) {
@@ -263,20 +262,36 @@ class Extension {
     }
 
     _end_on_window_move(actor, meta_display, meta_win) {
+        // Figure out if we're ending a valid drag op,
+        // then clear the timer so the next refresh doesn't
+        // actually end up doing anything.
+        let is_dragging = !!this._timer;
         this._timer = null;
+
         this._drag_begin_mouse_position = null;
         this._hide_hit_box();
 
-        if (!this._modkey.is_pressed_buffered()) { return; }
+        let is_mod_pressed = this._modkey.is_pressed_buffered();
+        let mouse_rect, hit_zone_idx, hit_zone;
+        let zone_win = this._windows[meta_win.get_id()];
 
-        let mouse_rect = this._get_mouse_rect();
-        let [hit_zone_idx, hit_zone] = this._zone_hit_test(mouse_rect);
+        // I don't know how we'd get here without having a window object, but just in case.
+        if ( typeof zone_win === 'undefined' ) {
+            this._log.warn("Drag op occurred for a window we don't know about.");
+            return;
+        }
+
+        if ( is_dragging && is_mod_pressed ) {
+            mouse_rect = this._get_mouse_rect();
+            [hit_zone_idx, hit_zone] = this._zone_hit_test(mouse_rect);
+        }
 
         if (typeof hit_zone !== 'undefined') {
-            let zone_win = this._windows[meta_win.get_id()];
-            zone_win.set_dropped_zone(hit_zone_idx)
             zone_win.set_restore_rect();
             zone_win.move_resize_frame(hit_zone);
+        } else {
+            zone_win.restore_rect();
+            zone_win.clear_restore_rect();
         }
     }
 

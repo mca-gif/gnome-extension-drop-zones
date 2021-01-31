@@ -21,18 +21,8 @@ class Window {
     this.win = meta_window;
     this._log = Logger.getLogger("Window");
     this._signals = [];
-
-    this._dropped_zone = -1;
+    
     this._restore_rect = null;
-  }
-
-  set_dropped_zone(n) {
-    this._log.debug(`Window ${this.win.get_id()} has been dropped in zone ${n}`);
-    this._dropped_zone = n;
-  }
-
-  get_dropped_zone_index() {
-    return this._dropped_zone;
   }
 
   set_restore_rect() {

@@ -60,7 +60,7 @@ Logger.LEVEL_INFO = 1;
 Logger.LEVEL_WARN = 2;
 Logger.LEVEL_ERROR = 3;
 
-Logger.DEFAULT_LEVEL = Logger.LEVEL_DEBUG;
+Logger.DEFAULT_LEVEL = Logger.LEVEL_WARN;
 if (GLib.getenv("EXT_DEBUG")){
 
     Logger.DEFAULT_LEVEL = Logger.LEVEL_DEBUG;
