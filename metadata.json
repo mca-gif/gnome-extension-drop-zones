@@ -5,6 +5,7 @@
   "version": 0.1,
   "schema": "org.gnome.shell.extensions.drop-zones",
   "shell-version": [
+    "3.36",
     "3.38"
   ]
 }
