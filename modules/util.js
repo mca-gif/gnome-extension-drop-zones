@@ -3,7 +3,7 @@ const Me = imports.misc.extensionUtils.getCurrentExtension();
 
 const Gdk = imports.gi.Gdk;
 
-class Util {
+var Util = class Util {
   static get_default_pointer() {
         let display = Gdk.Display.get_default();
         let seat = display.get_default_seat();

@@ -2,7 +2,6 @@ const Main = imports.ui.main;
 const Meta = imports.gi.Meta;
 const Shell = imports.gi.Shell;
 const Me = imports.misc.extensionUtils.getCurrentExtension();
-const Logger = Me.imports.modules.logger.Logger.getLogger("Drop Zones");
 
 const zoneable_window_types = [
   Meta.WindowType.NORMAL
@@ -11,15 +10,14 @@ const zoneable_window_types = [
 const blacklist_classes = [
   'Conky'
 ];
-class Window {
 
+var WindowProxy = class WindowProxy {
   static get_id(win) {
     return win.get_stable_sequence();
   }
 
   constructor(meta_window) {
     this.win = meta_window;
-    this._log = Logger.getLogger("Window");
     this._signals = [];
     
     this._restore_rect = null;

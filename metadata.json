@@ -1,11 +1,12 @@
 {
   "name": "Drop Zones",
   "description": "Window management tool that allows you to configure areas of the screen onto which you can then drop windows for quick flexible tiling.",
+  
   "uuid": "drop-zones@mattandersen.me",
-  "version": 0.1,
+  "version": "2",
   "schema": "org.gnome.shell.extensions.drop-zones",
   "shell-version": [
-    "3.36",
-    "3.38"
+    "40",
+    "42"
   ]
 }

@@ -15,8 +15,8 @@ const Meta = imports.gi.Meta;
 const Clutter = imports.gi.Clutter;
 const GLib = imports.gi.GLib;
 
-const Window = Me.imports.modules.window.Window;
-const Logger = Me.imports.modules.logger.Logger.getLogger("Drop Zones");
+const WindowProxy = Me.imports.modules.windowproxy.WindowProxy;
+const Logger = Me.imports.modules.logger.Logger;
 const Util = Me.imports.modules.util.Util;
 const Settings = Me.imports.modules.settings.Settings;
 const ModKeyHelper = Me.imports.modules.modkeyhelper.ModKeyHelper;
@@ -49,15 +49,14 @@ class HighlightBox extends St.Widget {
 
 class Extension {
 
-
-    constructor(uuid) {
+    constructor(uuid, logger) {
         this._uuid = uuid;
         this._hb = null;
         this._actor_connections = [];
         this._windows = [];
-        this._log = Logger.getLogger("Extension");
-        this._modkey = new ModKeyHelper();
-
+        this._log = logger;
+        this._modkey = new ModKeyHelper(this._log);
+        
         this._settings = Settings.forExtensionSchema();
 
         this._gnome_shell_settings = Settings.forSchema('org.gnome.shell.overrides');
@@ -179,7 +178,7 @@ class Extension {
     }
 
     _on_window_create(display, meta_win) {
-        let win = new Window(meta_win);
+        let win = new WindowProxy(meta_win);
         this._windows[meta_win.get_id()] = win;
         
         this._connect_signal(meta_win, 'unmanaged', this._on_window_unmanage.bind(this));
@@ -196,7 +195,7 @@ class Extension {
         win.clear_restore_rect();
     }
 
-    _on_window_grab_begin(actor, meta_display, meta_win, grab_op) {
+    _on_window_grab_begin(actor, meta_win, grab_op) {
         if (!meta_win) { return; }
         if (this.moving_grab_ops.indexOf(grab_op) === -1) { return; }
 
@@ -206,17 +205,17 @@ class Extension {
             this._calculate_zone_pixel_sizes();
         }
 
-        this._begin_on_window_move(actor, meta_display, meta_win);
+        this._begin_on_window_move(actor, meta_win);
     }
 
-    _on_window_grab_end(actor, meta_display, meta_win, grab_op) {
+    _on_window_grab_end(actor, meta_win, grab_op) {
         if (!meta_win) { return; }
         if (this.moving_grab_ops.indexOf(grab_op) === -1) { return; }
 
-        this._end_on_window_move(actor, meta_display, meta_win);
+        this._end_on_window_move(actor, meta_win);
     }
 
-    _begin_on_window_move(actor, meta_display, meta_win) {
+    _begin_on_window_move(actor, meta_win) {
         if (this._timer) { return; }
 
         let zone_win = this._windows[meta_win.get_id()];
@@ -261,7 +260,7 @@ class Extension {
         return true;
     }
 
-    _end_on_window_move(actor, meta_display, meta_win) {
+    _end_on_window_move(actor, meta_win) {
         // Figure out if we're ending a valid drag op,
         // then clear the timer so the next refresh doesn't
         // actually end up doing anything.
@@ -410,5 +409,6 @@ class Extension {
 }
 
 function init(meta) {
-    return new Extension(meta.uuid);
+    
+    return new Extension(meta.uuid, new Logger("drop-zones", Logger.LEVEL_DEBUG));
 }

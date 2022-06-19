@@ -1,7 +1,7 @@
 const Me = imports.misc.extensionUtils.getCurrentExtension();
 const Gio = imports.gi.Gio;
 
-class Settings {
+var Settings = class Settings {
   static forSchema(schema) {
     let gschema;
     let schemas_dir = Me.dir.get_child('schemas');

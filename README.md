@@ -14,5 +14,5 @@ To use, enable it in the Gnome Extensions app, and when moving a window hold dow
 
 To view the log for debugging purposes run the following in a terminal:
 ```
-    journalctl -xfe | grep -E "gnome-shell.*(?JSERROR|Drop Zones)"
+    journalctl -xfe | grep -E -i -B 2 -A 2 "gnome-shell.*(?JS ERROR|drop-zones)"
 ```

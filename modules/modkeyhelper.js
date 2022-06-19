@@ -1,13 +1,21 @@
+'use strict';
+
 const Me = imports.misc.extensionUtils.getCurrentExtension();
-const Logger = Me.imports.modules.logger.Logger.getLogger("Drop Zones");
+const Logger = Me.imports.modules.logger.Logger;
 
 const Gdk = imports.gi.Gdk;
 const GLib = imports.gi.GLib;
 
 const MOD_RELEASE_GRACE_PERIOD=200;
 
-class ModKeyHelper {
-  constructor() {
+var ModKeyHelper = class ModKeyHelper {
+  /**
+   * 
+   * @param Logger logger 
+   */
+  constructor(logger) {
+    this._log = logger;
+    
     this._mod_pressed = false;
     this._buffer_timer = null;
   }
@@ -31,7 +39,7 @@ class ModKeyHelper {
    */
   is_pressed()
   {
-    Logger.debug("Testing mod key press!");
+    this._log.debug("Testing mod key press!");
     let currently_pressed = this._check_mod_state();
 
     if ( currently_pressed ) {
@@ -39,11 +47,11 @@ class ModKeyHelper {
       this._stop_buffer_timer();
 
     } else if ( !currently_pressed && this._mod_pressed && !this._buffer_timer ) {
-      Logger.debug("Mod key lifted, beginning buffer timer.");
+      this._log.debug("Mod key lifted, beginning buffer timer.");
       this._start_buffer_timer();
     }
 
-    Logger.debug(`mod key state: ${this._mod_pressed}`);
+    this._log.debug(`mod key state: ${this._mod_pressed}`);
 
     return currently_pressed;
   }
@@ -77,10 +85,10 @@ class ModKeyHelper {
   {
         if ( !this._buffer_timer ) return false;
 
-        Logger.debug("Mod key buffer timer expired. Testing.");
+        this._log.debug("Mod key buffer timer expired. Testing.");
 
         if ( !this.is_pressed()) {
-          Logger.debug("Mod key is NOT pressed, clearing.");
+          this._log.debug("Mod key is NOT pressed, clearing.");
           this._mod_pressed = false;
         }
 
